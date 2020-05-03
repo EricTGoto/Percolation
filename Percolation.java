@@ -12,8 +12,21 @@ public class Percolation {
     private int openSites;
 
     public Percolation(int n) {
-        if (n > 1) throw new IllegalArgumentException("Please enter a value bigger than 0");
-        UF = new WeightedQuickUnionUF(n);
+        if (n < 1) throw new IllegalArgumentException("Please enter a value bigger than 0");
+
+        // initialize the union find data structure and also create the virtual sites
+        UF = new WeightedQuickUnionUF(n * n);
+
+        // virtual top site
+        for (int i = 0; i < n - 1; i++) {
+            UF.union(i, i + 1);
+        }
+
+        // virtual bottom site
+        for (int k = n * n - n; k < n * n - 2; k++) {
+            UF.union(k, k + 1);
+        }
+
         grid = new int[n][n];
         openSites = 0;
     }
@@ -30,10 +43,13 @@ public class Percolation {
         }
 
         // create connections by using union
-        if (row + 1 < grid.length && grid[row + 1][col] == 1) UF.union(row + col, row + col + grid.length);
-        if (row - 1 >= 0 && grid[row - 1][col] == 1) UF.union(row + col, row + col - grid.length);
-        if (col + 1 < grid.length && grid[row][col + 1] == 1) UF.union(row + col, row + col + 1);
-        if (col - 1 >= 0 && grid[row][col - 1] == 1) UF.union(row + col, row + col - 1);
+        int unionIndex = row * grid.length + col;
+        if (row + 1 < grid.length && grid[row + 1][col] == 1) UF.union(unionIndex, unionIndex + grid.length);
+        if (row - 1 >= 0 && grid[row - 1][col] == 1) UF.union(unionIndex, unionIndex - grid.length);
+        if (col + 1 < grid.length && grid[row][col + 1] == 1) UF.union(unionIndex, unionIndex + 1);
+        if (col - 1 >= 0 && grid[row][col - 1] == 1) UF.union(unionIndex, unionIndex - 1);
+
+
     }
 
     // check if a site is open
@@ -44,9 +60,7 @@ public class Percolation {
     }
 
     public boolean isFull(int row, int col) {
-
-
-        return false;
+        return UF.find(row + col) == UF.find(0);
     }
 
     // returns the number of open sites
@@ -56,7 +70,8 @@ public class Percolation {
 
     // returns true if the system percolates, false if it doesn't
     public boolean percolates() {
-        return false;
+        return UF.find(grid.length * grid.length - 1) == UF.find(0);
     }
+
 }
 
