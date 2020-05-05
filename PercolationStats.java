@@ -1,23 +1,27 @@
 import edu.princeton.cs.algs4.StdRandom;
+import edu.princeton.cs.algs4.StdStats;
 
 public class PercolationStats {
-    private Percolation p;
+
     private double[] thresholds;
-    private int trials;
+    private final int trials;
 
     public PercolationStats(int n, int trials) {
+        if (n <= 0 || trials <= 0) throw new IllegalArgumentException("Invalid arguments");
+
         int count = 0;
         this.trials = trials;
         thresholds = new double[trials];
+
         do {
-            p = new Percolation(n);
+            Percolation p = new Percolation(n);
 
             int randRow = 0;
             int randCol = 0;
 
             while (!p.percolates()) {
-                randRow = (int) (StdRandom.uniform() * n);
-                randCol = (int) (StdRandom.uniform() * n);
+                randRow = (int) (StdRandom.uniform() * n + 1);
+                randCol = (int) (StdRandom.uniform() * n + 1);
                 if (!p.isOpen(randRow, randCol)) p.open(randRow, randCol);
             }
 
@@ -28,29 +32,15 @@ public class PercolationStats {
     }
 
     public double mean() {
-        double total = 0.0;
-        for (int k = 0; k < thresholds.length; k++) {
-            total += thresholds[k];
-        }
-        return total / trials;
+        return StdStats.mean(thresholds);
     }
 
     public double stddev() {
-        double mean = mean();
-        double s = 0;
-        for (int k = 0; k < thresholds.length; k++) {
-            s += Math.pow((thresholds[k] - mean), 2);
-        }
-        s /= (trials - 1);
-        return Math.sqrt(s);
+        return StdStats.stddev(thresholds);
     }
 
-    public double confidenceLo() {
-        return mean() - 1.96 * stddev() / Math.sqrt(trials);
-    }
-
-    public double confidenceHi() {
-        return mean() + 1.96 * stddev() / Math.sqrt(trials);
+    private double interval() {
+        return 1.96 * stddev() / Math.sqrt(trials);
     }
 
     public static void main(String[] args) {
@@ -58,9 +48,15 @@ public class PercolationStats {
         int T = Integer.parseInt(args[1]);
 
         PercolationStats p = new PercolationStats(n, T);
-        System.out.println("mean = " + p.mean());
-        System.out.println("stddev = " + p.stddev());
-        System.out.println("95% confidence interval = [" + p.confidenceLo() + ", " + p.confidenceHi() + "]");
+        double mean = p.mean();
+        double stddev = p.stddev();
+        double interval = 1.96 * stddev / Math.sqrt(T);
+        double lo = mean - interval;
+        double hi = mean + interval;
+
+        System.out.println("mean = " + mean);
+        System.out.println("stddev = " + stddev);
+        System.out.println("95% confidence interval = [" + lo + ", " + hi + "]");
 
     }
 }
