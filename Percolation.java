@@ -6,61 +6,67 @@ import edu.princeton.cs.algs4.WeightedQuickUnionUF;
 // a full site in the bottom row
 // This idea of percolation is a useful idea in many physical applications such as semiconductor manufacturing,
 // water drainage, social media connections and so on
+// The convention being used is that the upper left corner of the grid is (1,1) and not (0,0)
+
 public class Percolation {
-    private int[][] grid;
+    private boolean[][] grid;
     private WeightedQuickUnionUF UF;
     private int openSites;
 
     public Percolation(int n) {
         if (n < 1) throw new IllegalArgumentException("Please enter a value bigger than 0");
 
-        // initialize the union find data structure and also create the virtual sites
+        // initialize the UF data structure and create the virtual bottom and top sites
         UF = new WeightedQuickUnionUF(n * n);
-
-        // virtual top site
-        for (int i = 0; i < n - 1; i++) {
+        for (int i = 0; i < n - 1; i++)
             UF.union(i, i + 1);
-        }
+        for (int j = n * n - n; j < n * n - 1; j++)
+            UF.union(j, j + 1);
 
-        // virtual bottom site
-        for (int k = n * n - n; k < n * n - 2; k++) {
-            UF.union(k, k + 1);
-        }
+        // I use n+1 because of the convention to have the upper left corner as (1,1) instead of (0,0)
+        grid = new boolean[n + 1][n + 1];
 
-        grid = new int[n][n];
         openSites = 0;
     }
 
     // open a site and also create the connections
     public void open(int row, int col) {
-        if (row < 0 || row > grid.length - 1 || col < 0 || col > grid.length - 1)
+        if (row < 1 || row > grid.length - 1 || col < 1 || col > grid.length - 1)
             throw new IllegalArgumentException("Please enter a valid pair of indices");
 
         // open a site by changing the value in the grid to a 1
-        if (grid[row][col] == 0) {
-            grid[row][col] = 1;
+        if (!grid[row][col]) {
+            grid[row][col] = true;
             openSites++;
         }
 
         // create connections by using union
-        int unionIndex = row * grid.length + col;
-        if (row + 1 < grid.length && grid[row + 1][col] == 1) UF.union(unionIndex, unionIndex + grid.length);
-        if (row - 1 >= 0 && grid[row - 1][col] == 1) UF.union(unionIndex, unionIndex - grid.length);
-        if (col + 1 < grid.length && grid[row][col + 1] == 1) UF.union(unionIndex, unionIndex + 1);
-        if (col - 1 >= 0 && grid[row][col - 1] == 1) UF.union(unionIndex, unionIndex - 1);
-
-
+        if (row + 1 < grid.length && grid[row + 1][col]) {
+            UF.union(unionIndex(row, col), unionIndex(row, col) + grid.length - 1);
+        }
+        if (row - 1 >= 1 && grid[row - 1][col]) {
+            UF.union(unionIndex(row, col), unionIndex(row, col) - grid.length + 1);
+        }
+        if (col + 1 < grid.length && grid[row][col + 1]) {
+            UF.union(unionIndex(row, col), unionIndex(row, col) + 1);
+        }
+        if (col - 1 >= 1 && grid[row][col - 1]) {
+            UF.union(unionIndex(row, col), unionIndex(row, col) - 1);
+        }
     }
 
     // check if a site is open
     public boolean isOpen(int row, int col) {
-        if (row < 0 || row > grid.length - 1 || col < 0 || col > grid.length - 1)
+        if (row < 1 || row > grid.length - 1 || col < 1 || col > grid.length - 1)
             throw new IllegalArgumentException("Please enter a valid pair of indices");
-        return grid[row][col] == 1;
+        return grid[row][col];
     }
 
+    // a site is full if it is connected to the top row and it is open
     public boolean isFull(int row, int col) {
-        return UF.find(row + col) == UF.find(0);
+        if (row < 1 || row > grid.length - 1 || col < 1 || col > grid.length - 1)
+            throw new IllegalArgumentException("Please enter a valid pair of indices");
+        return UF.find(unionIndex(row, col)) == UF.find(0) && grid[row][col];
     }
 
     // returns the number of open sites
@@ -70,8 +76,12 @@ public class Percolation {
 
     // returns true if the system percolates, false if it doesn't
     public boolean percolates() {
-        return UF.find(grid.length * grid.length - 1) == UF.find(0);
+        if (grid.length - 1 == 1) return isFull(1, 1);
+        return UF.find((grid.length - 1) * (grid.length - 1) - 1) == UF.find(0);
     }
 
+    private int unionIndex(int row, int col) {
+        return (row - 1) * (grid.length - 1) + col - 1;
+    }
 }
 
